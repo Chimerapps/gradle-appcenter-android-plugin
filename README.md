@@ -1,6 +1,9 @@
 # App center plugin for android gradle builds
 
+[ ![Download](https://api.bintray.com/packages/nicolaverbeeck/maven/gradle-appcenter-android-plugin/images/download.svg) ](https://bintray.com/nicolaverbeeck/maven/gradle-appcenter-android-plugin/_latestVersion)
+
 Generates tasks for uploading your android builds to appcenter
+
 
 Usage: 
 ```
