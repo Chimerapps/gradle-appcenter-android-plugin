@@ -14,7 +14,7 @@ buildscript {
 }
 
 //Add the following to your project build.gradle
-`apply plugin: 'com.chimerapps.gradle.gradle-appcenter-android-plugin'`
+apply plugin: 'com.chimerapps.gradle.gradle-appcenter-android-plugin'
 
 //Configure the plugin
 appcenterAndroid {
