@@ -1,5 +1,7 @@
 # App center plugin for android gradle builds
 
+Generates tasks for uploading your android builds to appcenter
+
 Usage: 
 ```
 //Add the following to your root build.gradle
