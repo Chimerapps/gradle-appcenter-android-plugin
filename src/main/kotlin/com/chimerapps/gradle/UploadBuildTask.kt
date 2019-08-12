@@ -26,7 +26,8 @@ data class UploadTaskConfiguration(
     val distributionTargets: List<String>,
     val notifyTesters: Boolean,
     val flavorName: String,
-    val changeLog: String?
+    val changeLog: String?,
+    val maxRetries: Int
 )
 
 open class UploadBuildTask @Inject constructor(
@@ -34,7 +35,7 @@ open class UploadBuildTask @Inject constructor(
 ) : DefaultTask() {
 
     private companion object {
-        private const val TIMEOUT_DURATION_SECONDS = 30L
+        private const val TIMEOUT_DURATION_SECONDS = 45L
     }
 
     private val moshi = Moshi.Builder().add(MoshiFactory()).build()
@@ -48,16 +49,13 @@ open class UploadBuildTask @Inject constructor(
 
     @TaskAction
     fun uploadBuild() {
-//        val logging = HttpLoggingInterceptor(HttpLoggingInterceptor.Logger { message -> project.logger.warn(message) })
-//
-//        logging.level = HttpLoggingInterceptor.Level.BODY
 
         val client = OkHttpClient.Builder()
             .callTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
             .writeTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
             .readTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
             .connectTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
-            //.addInterceptor(logging)
+            .addInterceptor(RetryInterceptor(maxRetries = configuration.maxRetries))
             .build()
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.appcenter.ms/v0.1/apps/")
@@ -68,8 +66,8 @@ open class UploadBuildTask @Inject constructor(
         try {
             uploadBuildUsingApi(retrofit.create(AppCenterMiniApi::class.java))
         } finally {
-            client.dispatcher().executorService().shutdown()
-            client.connectionPool().evictAll()
+            client.dispatcher.executorService.shutdown()
+            client.connectionPool.evictAll()
         }
     }
 
@@ -151,7 +149,7 @@ open class UploadBuildTask @Inject constructor(
 
     private fun <T> checkResponse(response: Response<T>): T {
         if (!response.isSuccessful)
-            throw IOException("Failed to communicate with AppCenter. Status code: ${response.code()} for ${response.raw().request().url()}")
+            throw IOException("Failed to communicate with AppCenter. Status code: ${response.code()} for ${response.raw().request.url}")
         return response.body() ?: throw IOException("Failed to communicate with AppCenter. Body expected")
     }
 

@@ -11,6 +11,8 @@ open class AppCenterExtension {
 
     open var releaseNotes: String? = null
 
+    open var maxRetries: Int = 3
+
     open var applicationIdToAppName: Closure<String>? = null
     open var variantToAppName: Closure<String>? = null
     open var flavorToAppName: Closure<String>? = null

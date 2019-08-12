@@ -47,6 +47,9 @@ appcenterAndroid {
     
     //Which testers or groups to distribute to. Defaults to 'collaborators'. Must contain at least 1 entry
     testers = ['collaborators', ...]
+
+    //In case of transient http errors, how many times to retry (after a delay). Defaults to 3 times
+    maxRetries = 3
 }
 
 ```

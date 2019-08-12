@@ -4,7 +4,9 @@ import com.chimerapps.moshigenerator.GenerateMoshi
 import com.chimerapps.moshigenerator.GenerateMoshiFactory
 import com.squareup.moshi.Json
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.*
@@ -15,7 +17,7 @@ interface AppCenterMiniApi {
     fun prepareUpload(
         @Header("X-API-Token") apiToken: String,
         @Path("appCenterOwner") owner: String, @Path("appCenterAppName") appName: String,
-        @Body body: RequestBody = RequestBody.create(MediaType.parse("application/json"), "")
+        @Body body: RequestBody = "".toRequestBody("application/json".toMediaTypeOrNull())
     ): Call<PrepareReleaseResponse>
 
     @POST
