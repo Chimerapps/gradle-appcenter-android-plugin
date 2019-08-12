@@ -8,6 +8,10 @@ import java.io.File
 
 class AndroidGradleAppCenterPlugin : Plugin<Project> {
 
+    private companion object {
+        private const val DEFAULT_MAX_RETRIES = 3
+    }
+
     override fun apply(target: Project) {
         if (!target.plugins.hasPlugin(AppPlugin::class.java)) {
             target.logger.warn("This plugin is made for Android Application Projects. The Android Plugin needs to be applied before this plugin.")
@@ -55,7 +59,8 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
                         apiToken = apiKey,
                         appCenterOwner = appOwner,
                         flavorName = variant.flavorName,
-                        changeLog = extension.releaseNotes
+                        changeLog = extension.releaseNotes,
+                        maxRetries = extension.maxRetries
                     )
 
                     @Suppress("UnstableApiUsage")
