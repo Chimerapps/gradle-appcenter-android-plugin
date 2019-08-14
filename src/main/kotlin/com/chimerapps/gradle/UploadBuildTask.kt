@@ -27,7 +27,8 @@ data class UploadTaskConfiguration(
     val notifyTesters: Boolean,
     val flavorName: String,
     val changeLog: String?,
-    val maxRetries: Int
+    val maxRetries: Int,
+    val assembleTaskName: String
 )
 
 open class UploadBuildTask @Inject constructor(
@@ -44,7 +45,7 @@ open class UploadBuildTask @Inject constructor(
         group = "AppCenter"
         description = "Upload ${configuration.flavorName} to app center"
 
-        dependsOn += project.tasks.findByName("assemble${configuration.flavorName.capitalize()}")
+        dependsOn += project.tasks.findByName("assemble${configuration.assembleTaskName.capitalize()}")
     }
 
     @TaskAction

@@ -60,7 +60,8 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
                         appCenterOwner = appOwner,
                         flavorName = variant.flavorName,
                         changeLog = extension.releaseNotes,
-                        maxRetries = extension.maxRetries
+                        maxRetries = extension.maxRetries,
+                        assembleTaskName = flavorName
                     )
 
                     @Suppress("UnstableApiUsage")
