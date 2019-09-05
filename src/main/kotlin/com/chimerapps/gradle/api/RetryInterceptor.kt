@@ -5,7 +5,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.gradle.api.logging.Logger
 import java.io.IOException
-import java.util.concurrent.TimeoutException
+import java.util.*
 
 class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) : Interceptor {
 
@@ -17,8 +17,11 @@ class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) 
         val originalRequest = chain.request()
         var response = try {
             chain.proceed(originalRequest)
-        } catch (e: TimeoutException) {
-            logger.info("[AppCenter] Request ${originalRequest.url} timed out, optionally retry $maxRetries times")
+        } catch (e: IOException) {
+            logger.info(
+                "[AppCenter] - (${Date()}) - Request ${originalRequest.url} failed with error (${e.message}), optionally retry $maxRetries times",
+                e
+            )
             null
         }
 
@@ -36,7 +39,7 @@ class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) 
                 else -> return response
             }
             if (response?.isSuccessful == true) {
-                logger.info("[AppCenter] Retried request success! (${originalRequest.url})")
+                logger.info("[AppCenter] - (${Date()}) - Retried request success! (${originalRequest.url})")
                 return response
             }
         }
@@ -46,13 +49,16 @@ class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) 
     }
 
     private fun retryRequest(request: Request, chain: Interceptor.Chain, retryCount: Int): Response? {
-        logger.info("[AppCenter] Retry request ${request.url}")
+        logger.info("[AppCenter] - (${Date()}) - Retry request ${request.url}")
         Thread.sleep(BACKOFF_TIMEOUT)
         //Try again
         return try {
             chain.proceed(request)
-        } catch (e: TimeoutException) {
-            logger.info("[AppCenter] Request ${request.url} timed out, retry $retryCount out of $maxRetries times")
+        } catch (e: IOException) {
+            logger.info(
+                "[AppCenter] - (${Date()}) - Request ${request.url} failed with error (${e.message}), retry $retryCount out of $maxRetries times",
+                e
+            )
             null
         }
     }

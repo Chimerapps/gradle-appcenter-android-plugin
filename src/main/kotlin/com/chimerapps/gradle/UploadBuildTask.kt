@@ -15,6 +15,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.io.File
 import java.io.IOException
 import java.time.Duration
+import java.util.*
 import javax.inject.Inject
 
 data class UploadTaskConfiguration(
@@ -48,6 +49,7 @@ open class UploadBuildTask @Inject constructor(
         description = "Upload ${configuration.flavorName} to app center"
 
         dependsOn += project.tasks.findByName("assemble${configuration.assembleTaskName.capitalize()}")
+        timeout.set(Duration.ofDays(1))
     }
 
     @TaskAction
@@ -63,7 +65,7 @@ open class UploadBuildTask @Inject constructor(
         if (project.logger.isEnabled(LogLevel.INFO)) {
             val logger = HttpLoggingInterceptor(object : HttpLoggingInterceptor.Logger {
                 override fun log(message: String) {
-                    project.logger.info("[AppCenter] $message")
+                    project.logger.info("[AppCenter] - (${Date()}) - $message")
                 }
             })
             if (project.logger.isEnabled(LogLevel.DEBUG))
