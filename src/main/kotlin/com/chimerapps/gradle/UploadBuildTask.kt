@@ -5,7 +5,9 @@ import com.squareup.moshi.Moshi
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
+import okhttp3.logging.HttpLoggingInterceptor
 import org.gradle.api.DefaultTask
+import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.TaskAction
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -36,7 +38,7 @@ open class UploadBuildTask @Inject constructor(
 ) : DefaultTask() {
 
     private companion object {
-        private const val TIMEOUT_DURATION_SECONDS = 45L
+        private const val TIMEOUT_DURATION_SECONDS = 60L
     }
 
     private val moshi = Moshi.Builder().add(MoshiFactory()).build()
@@ -51,13 +53,28 @@ open class UploadBuildTask @Inject constructor(
     @TaskAction
     fun uploadBuild() {
 
-        val client = OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .callTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
             .writeTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
             .readTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
             .connectTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
-            .addInterceptor(RetryInterceptor(maxRetries = configuration.maxRetries))
-            .build()
+            .addInterceptor(RetryInterceptor(maxRetries = configuration.maxRetries, logger = project.logger))
+
+        if (project.logger.isEnabled(LogLevel.INFO)) {
+            val logger = HttpLoggingInterceptor(object : HttpLoggingInterceptor.Logger {
+                override fun log(message: String) {
+                    project.logger.info("[AppCenter] $message")
+                }
+            })
+            if (project.logger.isEnabled(LogLevel.DEBUG))
+                logger.level = HttpLoggingInterceptor.Level.BODY
+            else
+                logger.level = HttpLoggingInterceptor.Level.BASIC
+            logger.redactHeader("X-API-Token")
+            builder.addInterceptor(logger)
+        }
+
+        val client = builder.build()
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.appcenter.ms/v0.1/apps/")
             .addConverterFactory(MoshiConverterFactory.create(moshi))
