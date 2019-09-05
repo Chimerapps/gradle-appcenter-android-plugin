@@ -16,6 +16,7 @@ import java.io.File
 import java.io.IOException
 import java.time.Duration
 import java.util.*
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 data class UploadTaskConfiguration(
@@ -56,10 +57,9 @@ open class UploadBuildTask @Inject constructor(
     fun uploadBuild() {
 
         val builder = OkHttpClient.Builder()
-            .callTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
-            .writeTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
-            .readTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
-            .connectTimeout(Duration.ofSeconds(TIMEOUT_DURATION_SECONDS))
+            .writeTimeout(TIMEOUT_DURATION_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(TIMEOUT_DURATION_SECONDS, TimeUnit.SECONDS)
+            .connectTimeout(TIMEOUT_DURATION_SECONDS, TimeUnit.SECONDS)
             .addInterceptor(RetryInterceptor(maxRetries = configuration.maxRetries, logger = project.logger))
 
         if (project.logger.isEnabled(LogLevel.INFO)) {
@@ -83,12 +83,9 @@ open class UploadBuildTask @Inject constructor(
             .client(client)
             .build()
 
-        try {
-            uploadBuildUsingApi(retrofit.create(AppCenterMiniApi::class.java))
-        } finally {
-            client.dispatcher.executorService.shutdown()
-            client.connectionPool.evictAll()
-        }
+        project.logger.info("[AppCenter] - (${Date()}) - Starting upload")
+        uploadBuildUsingApi(retrofit.create(AppCenterMiniApi::class.java))
+        project.logger.info("[AppCenter] - (${Date()}) - Upload finished")
     }
 
     private fun uploadBuildUsingApi(api: AppCenterMiniApi) {
