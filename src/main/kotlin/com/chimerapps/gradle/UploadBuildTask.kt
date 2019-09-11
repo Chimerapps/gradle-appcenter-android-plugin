@@ -108,8 +108,12 @@ open class UploadBuildTask @Inject constructor(
                 .addFormDataPart("ipa", configuration.apkFile.name, RequestBody.create(null, configuration.apkFile))
                 .build()
         ).execute()
-        if (!uploadResponse.isSuccessful)
-            throw IOException("Failed to upload release file. Code: ${uploadResponse.code()}")
+        if (!uploadResponse.isSuccessful) {
+            uploadResponse.errorBody()?.let {
+                project.logger.error("Failed to upload release file. Code: ${uploadResponse.code()} - ${uploadResponse.message()}. Body:\n${it.string()}")
+            }
+            throw IOException("Failed to upload release file. Code: ${uploadResponse.code()} - ${uploadResponse.message()}")
+        }
 
         val commitReleaseResponse = checkResponse(
             api.commitReleaseUpload(
@@ -131,8 +135,12 @@ open class UploadBuildTask @Inject constructor(
                 releaseNotes = configuration.changeLog
             )
         ).execute()
-        if (!distributeResponse.isSuccessful)
-            throw IOException("Failed to distribute. Code: ${distributeResponse.code()}")
+        if (!distributeResponse.isSuccessful) {
+            distributeResponse.errorBody()?.let {
+                project.logger.error("Failed to distribute. Code: ${distributeResponse.code()} - ${distributeResponse.message()}. Body:\n${it.string()}")
+            }
+            throw IOException("Failed to distribute. Code: ${distributeResponse.code()} - ${distributeResponse.message()}")
+        }
     }
 
     private fun uploadMappingFile(api: AppCenterMiniApi, mappingFile: File) {
@@ -151,8 +159,12 @@ open class UploadBuildTask @Inject constructor(
         )
 
         val uploadResult = api.uploadSymbolFile(response.uploadUrl, RequestBody.create(null, mappingFile)).execute()
-        if (!uploadResult.isSuccessful)
+        if (!uploadResult.isSuccessful) {
+            uploadResult.errorBody()?.let {
+                project.logger.error("Failed to upload mapping file. Code: ${uploadResult.code()} - ${uploadResult.message()}. Body:\n${it.string()}")
+            }
             throw IOException("Failed to upload mapping file. Code: ${uploadResult.code()}")
+        }
 
         val commitResponse = api.commitSymbolUpload(
             apiToken = configuration.apiToken,
@@ -160,13 +172,21 @@ open class UploadBuildTask @Inject constructor(
             owner = configuration.appCenterOwner,
             uploadId = response.uploadId
         ).execute()
-        if (!commitResponse.isSuccessful)
-            throw IOException("Failed to upload mapping file. Code: ${commitResponse.code()}")
+        if (!commitResponse.isSuccessful) {
+            commitResponse.errorBody()?.let {
+                project.logger.error("Failed to commit mapping file. Code: ${commitResponse.code()} - ${commitResponse.message()}. Body:\n${it.string()}")
+            }
+            throw IOException("Failed to commit mapping file. Code: ${commitResponse.code()} - ${commitResponse.message()}")
+        }
     }
 
     private fun <T> checkResponse(response: Response<T>): T {
-        if (!response.isSuccessful)
-            throw IOException("Failed to communicate with AppCenter. Status code: ${response.code()} for ${response.raw().request.url}")
+        if (!response.isSuccessful) {
+            response.errorBody()?.let {
+                project.logger.error("Failed to communicate with AppCenter. Status code: ${response.code()} - ${response.message()}. Body:\n${it.string()}")
+            }
+            throw IOException("Failed to communicate with AppCenter. Status code: ${response.code()} - ${response.message()} for ${response.raw().request.url}")
+        }
         return response.body() ?: throw IOException("Failed to communicate with AppCenter. Body expected")
     }
 

@@ -14,7 +14,7 @@ plugins {
     id "com.github.ben-manes.versions" version "0.22.0"
 }
 
-def artifactVersion = '1.2.2'
+def artifactVersion = '1.2.3'
 def artifactGroup = 'com.chimerapps.gradle'
 def artifactName = 'gradle-appcenter-android-plugin'
 group "$artifactGroup"
