@@ -22,9 +22,6 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
         try {
             target.afterEvaluate {
                 val apiKey = required(extension.apiKey, "apiKey")
-                val appOwner = required(extension.appOwner, "appOwner")
-                if (extension.testers.isEmpty())
-                    throw IllegalStateException("AppCenter - At least one tester or group must be provided")
 
                 val appExtension = target.extensions.findByType(AppExtension::class.java) ?: return@afterEvaluate
                 appExtension.applicationVariants.forEach { variant ->
@@ -38,10 +35,36 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
                         ?: extension.variantToAppName?.call(variant.name)
                         ?: extension.flavorToAppName?.call(variant.flavorName)
 
+                    val notifyTesters = extension.applicationIdToNotifyTesters?.call(variant.applicationId)
+                        ?: extension.variantToNotifyTesters?.call(variant.name)
+                        ?: extension.flavorToNotifyTesters?.call(variant.flavorName)
+                        ?: extension.notifyTesters
+
+                    val releaseNotes = extension.applicationIdToReleaseNotes?.call(variant.applicationId)
+                        ?: extension.variantToReleaseNotes?.call(variant.name)
+                        ?: extension.flavorToReleaseNotes?.call(variant.flavorName)
+                        ?: extension.releaseNotes
+
+                    val testers = extension.applicationIdToTesters?.call(variant.applicationId)
+                        ?: extension.variantToTesters?.call(variant.name)
+                        ?: extension.flavorToTesters?.call(variant.flavorName)
+                        ?: extension.testers
+
+                    val appOwner = extension.applicationIdAppOwner?.call(variant.applicationId)
+                        ?: extension.variantToAppOwner?.call(variant.name)
+                        ?: extension.flavorToAppOwner?.call(variant.flavorName)
+                        ?: required(extension.appOwner, "appOwner")
+
                     if (appName.isNullOrBlank()) {
                         target.logger.debug("AppCenter - Skipping variant ${variant.name}, no app name mapping")
                         return@forEach
                     }
+
+                    if (extension.testers.isEmpty())
+                        throw IllegalStateException("AppCenter - At least one tester or group must be provided for variant: ${variant.name}")
+
+                    if (extension.testers.isEmpty())
+                        throw IllegalStateException("AppCenter - No app owner defined for variant: ${variant.name}")
 
                     val flavorName = variant.name
                     val mappingFile: File? = variant.mappingFile
@@ -53,13 +76,13 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
                         buildNumber = variant.versionCode.toLong(),
                         buildVersion = variant.versionName,
                         mappingFile = mappingFile,
-                        distributionTargets = extension.testers,
-                        notifyTesters = extension.notifyTesters,
+                        distributionTargets = testers,
+                        notifyTesters = notifyTesters,
                         appCenterAppName = appName,
                         apiToken = apiKey,
                         appCenterOwner = appOwner,
                         flavorName = variant.flavorName,
-                        changeLog = extension.releaseNotes,
+                        changeLog = releaseNotes,
                         maxRetries = extension.maxRetries,
                         assembleTaskName = flavorName
                     )

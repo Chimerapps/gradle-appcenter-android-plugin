@@ -6,7 +6,7 @@ Generates tasks for uploading your android builds to appcenter
 
 
 Usage: 
-```
+```groovy
 //Add the following to your root build.gradle
 buildscript {
     repositories {
@@ -28,6 +28,9 @@ appcenterAndroid {
     notifyTesters = false
     releaseNotes = '<your release notes here, markdown is supported by appcenter>'
 
+    //Which testers or groups to distribute to. Defaults to 'collaborators'. Must contain at least 1 entry
+    testers = ['collaborators', ...]
+
     //Provide one of variantToAppName, applicationIdToAppName, flavorToAppName.
     //These methods can return null if this variant/app name does not support uploading to appcenter
     //NOTE: If the appname could not be found, no corresponding task will be generated
@@ -45,11 +48,75 @@ appcenterAndroid {
         return '<appcenter app name for this variant>'
     }
     
-    //Which testers or groups to distribute to. Defaults to 'collaborators'. Must contain at least 1 entry
-    testers = ['collaborators', ...]
-
     //In case of transient http errors, how many times to retry (after a delay). Defaults to 3 times
     maxRetries = 3
+}
+
+```
+
+####Advanced configuration
+```groovy
+//This shows more fine grained configuration for some common parameters. 
+//These are always resolved in the following order: applicationIdToXXX -> variantToXXX -> flavorToXXX
+//If any of these closures returns null, the next is considered, if all return null, the default, non specialized value is returned
+appcenterAndroid {
+
+//Testers
+        applicationIdToTesters = { applicationId ->
+            //Map application ids to appcenter testers
+            return ['collaborators', 'internaltesters']
+        }
+        flavorToTesters = { flavorName ->
+            //Map flavors to appcenter testers
+            return ['collaborators', 'internaltesters']
+        }
+        variantToTesters = { variantName ->
+            //Map variants to appcenter testers
+            return ['collaborators', 'internaltesters']
+        }
+
+//Release notes
+        applicationIdToReleaseNotes = { applicationId ->
+            //Map application ids to appcenter release notes
+            return '<release notes for this application id>'
+        }
+        flavorToReleaseNotes = { flavorName ->
+            //Map flavors to appcenter release notes
+            return '<release notes for this flavor>'
+        }
+        variantToReleaseNotes = { variantName ->
+            //Map variants to appcenter testers
+            return '<release notes for this variant>'
+        }
+
+//Notify testers
+        applicationIdToNotifyTesters = { applicationId ->
+            //Map application ids to appcenter notify testers
+            return true
+        }
+        flavorToNotifyTesters = { flavorName ->
+            //Map flavors to appcenter notify testers
+            return false
+        }
+        variantToNotifyTesters = { variantName ->
+            //Map variants to appcenter notify testers
+            return true
+        }
+
+//App owner
+        applicationIdToAppOwner = { applicationId ->
+            //Map application ids to appcenter app owners
+            return '<app owner for this application id>'
+        }
+        flavorToAppOwner = { flavorName ->
+            //Map flavors to appcenter app owners
+            return '<app owner for this flavor>'
+        }
+        variantToAppOwner = { variantName ->
+            //Map variants to appcenter app owners
+            return '<app owner for this variant>'
+        }
+
 }
 
 ```
