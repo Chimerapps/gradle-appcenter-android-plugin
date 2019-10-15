@@ -12,10 +12,6 @@ buildscript {
     repositories {
         jcenter()
     }
-    
-    dependencies {
-        classpath 'com.chimerapps.gradle:gradle-appcenter-android-plugin:<latest version>'
-    }
 }
 
 //Add the following to your project build.gradle

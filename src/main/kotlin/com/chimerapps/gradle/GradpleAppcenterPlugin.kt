@@ -50,7 +50,7 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
                         ?: extension.flavorToTesters?.call(variant.flavorName)
                         ?: extension.testers
 
-                    val appOwner = extension.applicationIdAppOwner?.call(variant.applicationId)
+                    val appOwner = extension.applicationIdToAppOwner?.call(variant.applicationId)
                         ?: extension.variantToAppOwner?.call(variant.name)
                         ?: extension.flavorToAppOwner?.call(variant.flavorName)
                         ?: required(extension.appOwner, "appOwner")
