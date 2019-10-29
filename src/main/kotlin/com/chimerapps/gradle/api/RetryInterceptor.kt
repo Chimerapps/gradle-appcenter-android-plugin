@@ -31,9 +31,13 @@ class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) 
         for (i in 0 until maxRetries) {
             response = when (response?.code) {
                 null -> {
+                    //Close previous response
+                    response?.close()
                     retryRequest(request = originalRequest, chain = chain, retryCount = i + 1)
                 }
                 500, 503, 504 -> {
+                    //Close previous response
+                    response.close()
                     retryRequest(request = originalRequest, chain = chain, retryCount = i + 1)
                 }
                 else -> return response
@@ -41,10 +45,13 @@ class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) 
             if (response?.isSuccessful == true) {
                 logger.info("[AppCenter] - (${Date()}) - Retried request success! (${originalRequest.url})")
                 return response
+            } else {
+                response?.close()
             }
         }
         if (response == null)
             throw IOException("Failed to retry request")
+
         return response
     }
 
