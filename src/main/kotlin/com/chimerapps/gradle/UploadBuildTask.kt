@@ -2,9 +2,11 @@ package com.chimerapps.gradle
 
 import com.chimerapps.gradle.api.*
 import com.squareup.moshi.Moshi
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
 import org.gradle.api.DefaultTask
 import org.gradle.api.logging.LogLevel
@@ -105,7 +107,11 @@ open class UploadBuildTask @Inject constructor(
 
         val uploadResponse = api.uploadFile(
             prepareUploadResponse.uploadUrl, MultipartBody.Builder()
-                .addFormDataPart("ipa", configuration.apkFile.name, RequestBody.create(null, configuration.apkFile))
+                .setType(MultipartBody.FORM)
+                .addFormDataPart(
+                    "ipa", configuration.apkFile.name,
+                    configuration.apkFile.asRequestBody("application/vnd.android.package-archive".toMediaType())
+                )
                 .build()
         ).execute()
         if (!uploadResponse.isSuccessful) {
