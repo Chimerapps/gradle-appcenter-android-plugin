@@ -35,7 +35,7 @@ class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) 
                     response?.close()
                     retryRequest(request = originalRequest, chain = chain, retryCount = i + 1)
                 }
-                500, 503, 504 -> {
+                500, 502, 503, 504 -> {
                     //Close previous response
                     response.close()
                     retryRequest(request = originalRequest, chain = chain, retryCount = i + 1)

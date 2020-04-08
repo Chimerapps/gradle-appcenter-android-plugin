@@ -23,7 +23,7 @@ import javax.inject.Inject
 
 data class UploadTaskConfiguration(
     val apkFile: File,
-    val mappingFile: File?,
+    val mappingFileProvider: () -> File?,
     val buildNumber: Long,
     val buildVersion: String,
     val appCenterOwner: String,
@@ -92,8 +92,9 @@ open class UploadBuildTask @Inject constructor(
 
     private fun uploadBuildUsingApi(api: AppCenterMiniApi) {
         uploadRelease(api)
-        if (configuration.mappingFile?.exists() == true)
-            uploadMappingFile(api, configuration.mappingFile)
+        val mappingFile = configuration.mappingFileProvider()
+        if (mappingFile?.exists() == true)
+            uploadMappingFile(api, mappingFile)
     }
 
     private fun uploadRelease(api: AppCenterMiniApi) {

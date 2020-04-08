@@ -2,6 +2,7 @@ package com.chimerapps.gradle
 
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.AppPlugin
+import com.android.build.gradle.api.ApplicationVariant
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import java.io.File
@@ -67,7 +68,6 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
                         throw IllegalStateException("AppCenter - No app owner defined for variant: ${variant.name}")
 
                     val flavorName = variant.name
-                    val mappingFile: File? = variant.mappingFile
 
                     val taskName = "upload${flavorName.capitalize()}ToAppCenter"
 
@@ -75,7 +75,7 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
                         apkFile = output.outputFile,
                         buildNumber = variant.versionCode.toLong(),
                         buildVersion = variant.versionName,
-                        mappingFile = mappingFile,
+                        mappingFileProvider = { getMappingFile(variant) },
                         distributionTargets = testers,
                         notifyTesters = notifyTesters,
                         appCenterAppName = appName,
@@ -101,6 +101,15 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
         if (data == null)
             throw IllegalStateException("AppCenter - Missing required field: $name")
         return data
+    }
+
+    @Suppress("UnstableApiUsage", "DEPRECATION")
+    private fun getMappingFile(variant: ApplicationVariant): File {
+        return try {
+            variant.mappingFileProvider.get().singleFile
+        } catch (e: Throwable) {
+            variant.mappingFile
+        }
     }
 
 }
