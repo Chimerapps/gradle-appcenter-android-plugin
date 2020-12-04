@@ -9,10 +9,6 @@ import java.io.File
 
 class AndroidGradleAppCenterPlugin : Plugin<Project> {
 
-    private companion object {
-        private const val DEFAULT_MAX_RETRIES = 3
-    }
-
     override fun apply(target: Project) {
         if (!target.plugins.hasPlugin(AppPlugin::class.java)) {
             target.logger.warn("This plugin is made for Android Application Projects. The Android Plugin needs to be applied before this plugin.")
@@ -75,7 +71,7 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
                         apkFile = output.outputFile,
                         buildNumber = variant.versionCode.toLong(),
                         buildVersion = variant.versionName,
-                        mappingFileProvider = { getMappingFile(variant) },
+                        mappingFileProvider = { getMappingFile(target, variant) },
                         distributionTargets = testers,
                         notifyTesters = notifyTesters,
                         appCenterAppName = appName,
@@ -104,10 +100,11 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
     }
 
     @Suppress("UnstableApiUsage", "DEPRECATION")
-    private fun getMappingFile(variant: ApplicationVariant): File {
+    private fun getMappingFile(project: Project, variant: ApplicationVariant): File? {
         return try {
             variant.mappingFileProvider.get().singleFile
         } catch (e: Throwable) {
+            project.logger.info("Failed to get file from mapping file provider:", e)
             variant.mappingFile
         }
     }

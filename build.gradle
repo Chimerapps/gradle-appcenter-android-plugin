@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.3.71'
+    ext.kotlin_version = '1.4.20'
 
     repositories {
         mavenCentral()
@@ -10,11 +10,11 @@ buildscript {
     }
 }
 plugins {
-    id "com.jfrog.bintray" version "1.8.4"
-    id "com.github.ben-manes.versions" version "0.28.0"
+    id "com.jfrog.bintray" version "1.8.5"
+    id "com.github.ben-manes.versions" version "0.36.0"
 }
 
-def artifactVersion = '1.3.4'
+def artifactVersion = '1.3.5'
 def artifactGroup = 'com.chimerapps.gradle'
 def artifactName = 'gradle-appcenter-android-plugin'
 group "$artifactGroup"
@@ -49,18 +49,16 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
-    compile 'com.squareup.retrofit2:retrofit:2.8.1'
-    compile 'com.squareup.okhttp3:okhttp:4.5.0'
-    compile 'com.squareup.okhttp3:logging-interceptor:4.5.0'
-    compile 'com.squareup.moshi:moshi:1.9.2'
-    compile 'com.squareup.retrofit2:converter-moshi:2.8.1'
+    compile 'com.squareup.retrofit2:retrofit:2.9.0'
+    compile 'com.squareup.okhttp3:okhttp:4.10.0-RC1'
+    compile 'com.squareup.okhttp3:logging-interceptor:4.10.0-RC1'
+    compile 'com.squareup.moshi:moshi:1.11.0'
+    compile 'com.squareup.retrofit2:converter-moshi:2.9.0'
 
     compile 'com.chimerapps:moshi-generator-runtime:0.11.0'
     kapt 'com.chimerapps:moshi-generator:0.11.0'
 
     compileOnly "com.android.tools.build:gradle:3.6.1"
-
-    testCompile 'junit:junit:4.12'
 }
 
 bintray {
