@@ -102,7 +102,7 @@ class AndroidGradleAppCenterPlugin : Plugin<Project> {
     @Suppress("UnstableApiUsage", "DEPRECATION")
     private fun getMappingFile(project: Project, variant: ApplicationVariant): File? {
         return try {
-            variant.mappingFileProvider.get().singleFile
+            variant.mappingFileProvider.get().files.firstOrNull()
         } catch (e: Throwable) {
             project.logger.info("Failed to get file from mapping file provider:", e)
             variant.mappingFile
