@@ -7,7 +7,7 @@ import org.gradle.api.logging.Logger
 import java.io.IOException
 import java.util.*
 
-class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) : Interceptor {
+class RetryInterceptor(private val maxRetries: Int, private val logger: Logger?) : Interceptor {
 
     private companion object {
         private const val BACKOFF_TIMEOUT = 5000L
@@ -18,7 +18,7 @@ class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) 
         var response = try {
             chain.proceed(originalRequest)
         } catch (e: IOException) {
-            logger.info(
+            logger?.info(
                 "[AppCenter] - (${Date()}) - Request ${originalRequest.url} failed with error (${e.message}), optionally retry $maxRetries times",
                 e
             )
@@ -43,7 +43,7 @@ class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) 
                 else -> return response
             }
             if (response?.isSuccessful == true) {
-                logger.info("[AppCenter] - (${Date()}) - Retried request success! (${originalRequest.url})")
+                logger?.info("[AppCenter] - (${Date()}) - Retried request success! (${originalRequest.url})")
                 return response
             } else {
                 response?.close()
@@ -56,13 +56,13 @@ class RetryInterceptor(private val maxRetries: Int, private val logger: Logger) 
     }
 
     private fun retryRequest(request: Request, chain: Interceptor.Chain, retryCount: Int): Response? {
-        logger.info("[AppCenter] - (${Date()}) - Retry request ${request.url}")
+        logger?.info("[AppCenter] - (${Date()}) - Retry request ${request.url}")
         Thread.sleep(BACKOFF_TIMEOUT)
         //Try again
         return try {
             chain.proceed(request)
         } catch (e: IOException) {
-            logger.info(
+            logger?.info(
                 "[AppCenter] - (${Date()}) - Request ${request.url} failed with error (${e.message}), retry $retryCount out of $maxRetries times",
                 e
             )

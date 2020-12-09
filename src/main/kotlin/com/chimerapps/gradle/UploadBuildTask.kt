@@ -2,10 +2,7 @@ package com.chimerapps.gradle
 
 import com.chimerapps.gradle.api.*
 import com.squareup.moshi.Moshi
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
-import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
 import org.gradle.api.DefaultTask
@@ -65,11 +62,9 @@ open class UploadBuildTask @Inject constructor(
             .addInterceptor(RetryInterceptor(maxRetries = configuration.maxRetries, logger = project.logger))
 
         if (project.logger.isEnabled(LogLevel.INFO)) {
-            val logger = HttpLoggingInterceptor(object : HttpLoggingInterceptor.Logger {
-                override fun log(message: String) {
-                    project.logger.info("[AppCenter] - (${Date()}) - $message")
-                }
-            })
+            val logger = HttpLoggingInterceptor { message ->
+                project.logger.info("[AppCenter] - (${Date()}) - $message")
+            }
             if (project.logger.isEnabled(LogLevel.DEBUG))
                 logger.level = HttpLoggingInterceptor.Level.BODY
             else
@@ -98,6 +93,17 @@ open class UploadBuildTask @Inject constructor(
     }
 
     private fun uploadRelease(api: AppCenterMiniApi) {
+        val distributionIds = configuration.distributionTargets.map {
+            checkResponse(
+                api.getDistributionGroup(
+                    apiToken = configuration.apiToken,
+                    owner = configuration.appCenterOwner,
+                    appName = configuration.appCenterAppName,
+                    name = it
+                ).execute()
+            ).id
+        }
+
         val prepareUploadResponse = checkResponse(
             api.prepareUpload(
                 apiToken = configuration.apiToken,
@@ -106,47 +112,56 @@ open class UploadBuildTask @Inject constructor(
             ).execute()
         )
 
-        val uploadResponse = api.uploadFile(
-            prepareUploadResponse.uploadUrl, MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart(
-                    "ipa", configuration.apkFile.name,
-                    configuration.apkFile.asRequestBody("application/vnd.android.package-archive".toMediaType())
-                )
-                .build()
-        ).execute()
-        if (!uploadResponse.isSuccessful) {
-            uploadResponse.errorBody()?.let {
-                project.logger.error("Failed to upload release file. Code: ${uploadResponse.code()} - ${uploadResponse.message()}. Body:\n${it.string()}")
-            }
-            throw IOException("Failed to upload release file. Code: ${uploadResponse.code()} - ${uploadResponse.message()}")
-        }
+        val prepareBinaryUploadResponse = checkResponse(api.prepareBinaryUpload(
+            createPrepareBinaryUrl(prepareUploadResponse, configuration.apkFile)
+        ).execute())
 
-        val commitReleaseResponse = checkResponse(
-            api.commitReleaseUpload(
+        checkResponse(api.uploadBinaryChunked(prepareUploadResponse, configuration.apkFile, prepareBinaryUploadResponse))
+
+        checkResponse(api.finalizeBinaryUpload(prepareFinishUploadUrl(prepareUploadResponse)).execute())
+
+        checkResponse(
+            api.commitBinaryUploadStatus(
                 apiToken = configuration.apiToken,
-                appName = configuration.appCenterAppName,
                 owner = configuration.appCenterOwner,
-                uploadId = prepareUploadResponse.uploadId
+                appName = configuration.appCenterAppName,
+                uploadId = prepareUploadResponse.id,
             ).execute()
         )
 
-        val distributeResponse = api.distributeRelease(
+        val releaseId = api.pollForReleaseId(
             apiToken = configuration.apiToken,
-            appName = configuration.appCenterAppName,
             owner = configuration.appCenterOwner,
-            releaseId = commitReleaseResponse.releaseId,
-            body = DistributeReleaseRequest(
-                configuration.distributionTargets.map { DistributeReleaseDestination(it) },
-                notifyTesters = configuration.notifyTesters,
-                releaseNotes = configuration.changeLog
+            appName = configuration.appCenterAppName,
+            uploadId = prepareUploadResponse.id,
+            logger = project.logger,
+        )
+
+        if (!configuration.changeLog.isNullOrBlank()) {
+            checkResponse(
+                api.updateReleaseNotes(
+                    apiToken = configuration.apiToken,
+                    owner = configuration.appCenterOwner,
+                    appName = configuration.appCenterAppName,
+                    releaseId = releaseId,
+                    body = UpdateReleaseRequest(configuration.changeLog)
+                ).execute()
             )
-        ).execute()
-        if (!distributeResponse.isSuccessful) {
-            distributeResponse.errorBody()?.let {
-                project.logger.error("Failed to distribute. Code: ${distributeResponse.code()} - ${distributeResponse.message()}. Body:\n${it.string()}")
-            }
-            throw IOException("Failed to distribute. Code: ${distributeResponse.code()} - ${distributeResponse.message()}")
+        }
+
+        distributionIds.forEach { groupId ->
+            checkResponse(
+                api.addDistributionGroup(
+                    apiToken = configuration.apiToken,
+                    owner = configuration.appCenterOwner,
+                    appName = configuration.appCenterAppName,
+                    releaseId = releaseId,
+                    body = AddDistributionGroupRequest(id = groupId,
+                        notifyTesters = configuration.notifyTesters,
+                        mandatoryUpdate = false,
+                    )
+                ).execute()
+            )
         }
     }
 
@@ -165,7 +180,7 @@ open class UploadBuildTask @Inject constructor(
             ).execute()
         )
 
-        val uploadResult = api.uploadSymbolFile(response.uploadUrl, RequestBody.create(null, mappingFile)).execute()
+        val uploadResult = api.uploadSymbolFile(response.uploadUrl, mappingFile.asRequestBody(null)).execute()
         if (!uploadResult.isSuccessful) {
             uploadResult.errorBody()?.let {
                 project.logger.error("Failed to upload mapping file. Code: ${uploadResult.code()} - ${uploadResult.message()}. Body:\n${it.string()}")
