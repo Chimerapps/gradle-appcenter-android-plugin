@@ -10,21 +10,15 @@ buildscript {
     }
 }
 plugins {
-    id "com.jfrog.bintray" version "1.8.5"
     id "com.github.ben-manes.versions" version "0.36.0"
 }
-
-def artifactVersion = '1.4.0'
-def artifactGroup = 'com.chimerapps.gradle'
-def artifactName = 'gradle-appcenter-android-plugin'
-group "$artifactGroup"
-version "$artifactVersion"
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'maven-publish'
+apply plugin: 'signing'
 apply plugin: 'idea'
 
 sourceCompatibility = 1.8
@@ -63,62 +57,4 @@ dependencies {
     testImplementation 'junit:junit:4.12'
 }
 
-bintray {
-    user = System.getenv('BINTRAY_USER')
-    key = System.getenv('BINTRAY_KEY')
-    pkg {
-        repo = 'maven'
-        name = "$artifactName"
-        licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/Chimerapps/gradle-appcenter-android-plugin'
-
-        version {
-            name = "$artifactVersion"
-            desc = "Gradle plugin for uploading builds to appcenter"
-            released = new Date()
-        }
-    }
-    publications = ['maven']
-}
-
-def pomConfig = {
-    licenses {
-        license {
-            name "The Apache Software License, Version 2.0"
-            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
-            distribution "repo"
-        }
-    }
-    developers {
-        developer {
-            name "Nicola Verbeeck"
-            email "nicola@chimerapps.com"
-            organization "Chimerapps"
-        }
-    }
-}
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            groupId "$artifactGroup"
-            artifactId "$artifactName"
-            version "$artifactVersion"
-
-            from components.java
-
-            artifact sourceJar {
-                classifier "sources"
-            }
-            artifact javadocJar
-
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('description', 'Gradle plugin that allows android builds to be uploaded to appcenter')
-                root.appendNode('name', "$artifactName")
-                root.appendNode('url', 'https://github.com/Chimerapps/gradle-appcenter-android-plugin')
-                root.children().last() + pomConfig
-            }
-        }
-    }
-}
+apply from: "${rootProject.projectDir}/scripts/publish-mavencentral.gradle"

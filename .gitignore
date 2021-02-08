@@ -162,6 +162,8 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+signing.properties
+
 ### Windows ###
 # Windows thumbnail cache files
 Thumbs.db
